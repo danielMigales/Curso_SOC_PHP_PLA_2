@@ -4,6 +4,7 @@
 $numeroNoches = 0;
 $ciudad = null;
 $diasAlquilerCoche = 0;
+$errores = null;
 
 //constantes
 const PRECIOXNOCHE = 60;
@@ -17,68 +18,74 @@ $costeTotalAvion = 0;
 $costeTotalCoche = 0;
 $costeTotalViaje = 0;
 
-//array para todos los errores
-$errores = [];
+define("CIUDADES", [
+	"Madrid",
+	"Paris",
+	"Los Angeles",
+	"Roma"
+]);
 
 //detecccion del submit
 if (isset($_POST['enviar'])) {
 
-	//NUMERO DE NOCHES
 	try {
-		//recuperar numero de noches
-		$numeroNoches = filter_input(INPUT_POST, 'noches', FILTER_VALIDATE_INT);
+		//NUMERO DE NOCHES
+		//recuperar numero de noches numericamente
+		if (!$numeroNoches = filter_input(INPUT_POST, 'noches', FILTER_VALIDATE_INT)) {
+			throw new Exception("Introduzca el numero de noches.", 1);
+		}
 		//validar que sea mayor de 0
 		if (!is_numeric($numeroNoches) || $numeroNoches <= 0) {
-			throw new Exception("Seleccione el numero de noches. Introduzca un numero mayor que 0.", 1);
+			throw new Exception("Seleccione el numero de noches. Introduzca un numero mayor que 0.", 2);
 		}
-	} catch (Exception $e) {
-		$errores[] = 'Error nº: ' . $e->getCode() . '. ' . $e->getMessage() . '<br>';
-	}
 
-	//CIUDAD DE DESTINO
-	try {
+		//CIUDAD DE DESTINO
 		//recuperar ciudad de destino
 		if (!$ciudad = filter_input(INPUT_POST, 'ciudad')) {
-			throw new Exception("Seleccione la ciudad de destino.", 2);
+			throw new Exception("Seleccione la ciudad de destino.", 3);
 		}
-	} catch (Exception $e) {
-		$errores[] = 'Error nº: ' . $e->getCode() . '. ' . $e->getMessage() . '<br>';
-	}
 
-	//NUMERO DE ALQUILER DE COCHE
-	try {
+		
+		//FALTA VALIDAR QUE NO SE CAMBIE LA CIUDAD COMPARANDO LAS CONSTANTES
+
+		if (!$ciudad == CIUDADES) {
+			throw new Exception("El destino elegido no se encuentra disponible.", 4);
+		}
+
+
+
+
+		//DIAS ALQUILER DE COCHE
 		//recuperar dias alquiler coche
-		$diasAlquilerCoche = filter_input(INPUT_POST, 'coche', FILTER_VALIDATE_INT);
-		//validar que sea mayor de 0 y que no este vacio
-		if (!$diasAlquilerCoche == null && $diasAlquilerCoche <= 0) {
-			throw new Exception("Seleccione los dias de alquiler de vehiculo. Introduzca un numero mayor que 0.", 3);
+		if (!$diasAlquilerCoche = filter_input(INPUT_POST, 'coche', FILTER_VALIDATE_INT)) {
+			$errores = '****El alquiler del vehiculo es opcional****';
+		}
+		//validar que sea mayor de 0
+		if ($diasAlquilerCoche < 0) {
+			throw new Exception("Seleccione los dias de alquiler de vehiculo. Introduzca un numero mayor que 0.", 5);
 		}
 		//impedir que se ejecute el metodo calculo del coste de alquiler si los dias son 0
 		$costeTotalCoche = $diasAlquilerCoche == null ? 0 : costeCoche($diasAlquilerCoche);
-	} catch (Exception $e) {
-		$errores[] = 'Error nº: ' . $e->getCode() . '. ' . $e->getMessage() . '<br>';
-	}
-
-	//COMPARAR DIAS DE ESTANCIA Y ALQUILER DE COCHE
-	try {
+		//COMPARAR DIAS DE ESTANCIA Y ALQUILER DE COCHE
 		//validar que no sea mayor que el numero de estancia
 		if ($diasAlquilerCoche > $numeroNoches) {
-			throw new Exception("Seleccione los dias de alquiler de vehiculo. No debe ser superior al numero de dias de estancia.", 4);
+			throw new Exception("Los dias de alquiler de vehiculo no deben ser superioriores al numero de dias de estancia.", 6);
+		}
+
+		//SI SE INTRODUCEN CORRECTAMENTE EL NUMERO DE NOCHES, CIUDAD DE DESTINO Y LOS DIAS DE ALQUILER REALIZARA LOS CALCULOS
+		if ($numeroNoches && $ciudad && $diasAlquilerCoche <= $numeroNoches) {
+			//llamada al metodo de calculo de coste noches hotel
+			$costeTotalHotel = costeHotel($numeroNoches);
+			//llamada al metodo coste avion
+			$costeTotalAvion = costeAvion($ciudad);
+			//llamada al metodo de calculo de coste coche
+			$costeTotalCoche = costeCoche($diasAlquilerCoche);
+			//lamada al metodo de calculo total del viaje
+			$costeTotalViaje = calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotalCoche);
 		}
 	} catch (Exception $e) {
-		$errores[] = 'Error nº: ' . $e->getCode() . '. ' . $e->getMessage() . '<br>';
-	}
-
-	//SI SE INTRODUCEN CORRECTAMENTE EL NUMERO DE NOCHES, CIUDAD DE DESTINO Y LOS DIAS DE ALQUILER REALIZARA LOS CALCULOS
-	if ($numeroNoches && $ciudad && $diasAlquilerCoche <= $numeroNoches) {
-		//llamada al metodo de calculo de coste noches hotel
-		$costeTotalHotel = costeHotel($numeroNoches);
-		//llamada al metodo coste avion
-		$costeTotalAvion = costeAvion($ciudad);
-		//llamada al metodo de calculo de coste coche
-		$costeTotalCoche = costeCoche($diasAlquilerCoche);
-		//lamada al metodo de calculo total del viaje
-		$costeTotalViaje = calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotalCoche);
+		//capturamos en el catch las excepciones lanzadas con el throw
+		$errores = 'Error nº: ' . $e->getCode() . '. ' . $e->getMessage() . '<br>';
 	}
 }
 
@@ -150,7 +157,6 @@ function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotal
 
 ?>
 
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -207,9 +213,7 @@ function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotal
 					<input type="text" class="form-control" name="total" id="total" disabled value='<?= $costeTotalViaje ?>'>
 				</div>
 			</div><br>
-			<span class='errores'><?php foreach ($errores as $value) {
-										echo $value, "\n";
-									} ?></span>
+			<span class='errores'><?= $errores ?></span>
 		</form>
 	</main>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
