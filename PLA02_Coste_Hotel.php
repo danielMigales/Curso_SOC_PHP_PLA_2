@@ -20,6 +20,7 @@ $costeTotalViaje = 0;
 
 //detecccion del submit
 if (isset($_POST['enviar'])) {
+	
 	try {
 		//NUMERO DE NOCHES
 		//recuperar numero de noches numericamente. Esta excepcion salta si dejamos las noches en 0
