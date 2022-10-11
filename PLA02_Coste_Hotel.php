@@ -18,59 +18,52 @@ $costeTotalAvion = 0;
 $costeTotalCoche = 0;
 $costeTotalViaje = 0;
 
-define("CIUDADES", [
-	"Madrid",
-	"Paris",
-	"Los Angeles",
-	"Roma"
-]);
-
 //detecccion del submit
 if (isset($_POST['enviar'])) {
-
 	try {
 		//NUMERO DE NOCHES
-		//recuperar numero de noches numericamente
+		//recuperar numero de noches numericamente. Esta excepcion salta si dejamos las noches en 0
 		if (!$numeroNoches = filter_input(INPUT_POST, 'noches', FILTER_VALIDATE_INT)) {
 			throw new Exception("Introduzca el numero de noches.", 1);
 		}
-		//validar que sea mayor de 0
+		//validar que sea mayor de 0. Esta excepcion salta si ponemos el numero de noches en negativo
 		if (!is_numeric($numeroNoches) || $numeroNoches <= 0) {
 			throw new Exception("Seleccione el numero de noches. Introduzca un numero mayor que 0.", 2);
 		}
 
+
 		//CIUDAD DE DESTINO
-		//recuperar ciudad de destino
+		//recuperar ciudad de destino. Esta excepcion salta si no seleccionamos ninguna ciudad
 		if (!$ciudad = filter_input(INPUT_POST, 'ciudad')) {
 			throw new Exception("Seleccione la ciudad de destino.", 3);
 		}
-
-		
-		//FALTA VALIDAR QUE NO SE CAMBIE LA CIUDAD COMPARANDO LAS CONSTANTES
-
-		if (!$ciudad == CIUDADES) {
+		//validacion de que la ciudad se corresponda. Si es correcto no hace nada y si no lo es lanza excepcion si se modifica manualmente la ciudad
+		if ($ciudad === 'Madrid') {
+		} else if ($ciudad === 'Paris') {
+		} else if ($ciudad === 'Los Angeles') {
+		} else if ($ciudad === 'Roma') {
+		} else {
 			throw new Exception("El destino elegido no se encuentra disponible.", 4);
 		}
 
 
-
-
 		//DIAS ALQUILER DE COCHE
-		//recuperar dias alquiler coche
+		//recuperar dias alquiler coche. Si dejamos el numero en 0 saldra un aviso comentando que es opcional pero el programa continua ya que no es obligatorio alquilar un vehiculo.
 		if (!$diasAlquilerCoche = filter_input(INPUT_POST, 'coche', FILTER_VALIDATE_INT)) {
-			$errores = '****El alquiler del vehiculo es opcional****';
+			$errores = '****Sin alquiler de vehiculo****';
 		}
-		//validar que sea mayor de 0
+		//validar que sea mayor de 0. Esta excepcion salta si seleccionamos un numero negativo en el alquiler de vehiculos
 		if ($diasAlquilerCoche < 0) {
 			throw new Exception("Seleccione los dias de alquiler de vehiculo. Introduzca un numero mayor que 0.", 5);
 		}
 		//impedir que se ejecute el metodo calculo del coste de alquiler si los dias son 0
 		$costeTotalCoche = $diasAlquilerCoche == null ? 0 : costeCoche($diasAlquilerCoche);
 		//COMPARAR DIAS DE ESTANCIA Y ALQUILER DE COCHE
-		//validar que no sea mayor que el numero de estancia
+		//validar que no sea mayor que el numero de estancia. Esta excepcion salta si el numero de alquiler de vehiculo es superior al numero de noches de estancia
 		if ($diasAlquilerCoche > $numeroNoches) {
-			throw new Exception("Los dias de alquiler de vehiculo no deben ser superioriores al numero de dias de estancia.", 6);
+			throw new Exception("Los dias de alquiler de vehiculo no deben ser superiores al numero de dias de estancia.", 6);
 		}
+
 
 		//SI SE INTRODUCEN CORRECTAMENTE EL NUMERO DE NOCHES, CIUDAD DE DESTINO Y LOS DIAS DE ALQUILER REALIZARA LOS CALCULOS
 		if ($numeroNoches && $ciudad && $diasAlquilerCoche <= $numeroNoches) {
@@ -84,7 +77,7 @@ if (isset($_POST['enviar'])) {
 			$costeTotalViaje = calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotalCoche);
 		}
 	} catch (Exception $e) {
-		//capturamos en el catch las excepciones lanzadas con el throw
+		//capturamos en el catch las excepciones lanzadas con el throw. Se mostraran una a una ya que cada excepcion paraliza la ejecucion del resto
 		$errores = 'Error nº: ' . $e->getCode() . '. ' . $e->getMessage() . '<br>';
 	}
 }
@@ -110,7 +103,7 @@ function costeAvion($ciudad)
 	} catch (Exception $e) {
 		throw new Exception($e->getMessage(), $e->getCode());
 	}
-	//bucle de seleccion de ciudad
+	//bucle de seleccion de ciudad asignando un precio al billete de avion
 	switch ($ciudad) {
 		case ($ciudad == 'Madrid'):
 			return $costeTotalAvion = 150;
@@ -148,7 +141,7 @@ function costeCoche($diasAlquilerCoche)
 	return $costeTotalCoche;
 }
 
-//funcion calculo total precio
+//funcion calculo total precio. Esta funcion recoge las sumas totales del resto de funciones y crea un string con todos los totales en una variable. Esa variable sera la que se muestre en el input final
 function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotalCoche)
 {
 	$costeTotalViaje = 'Hotel:' . $costeTotalHotel . '€,' . ' Avion:' . $costeTotalAvion . '€,' . ' Vehiculo:' . $costeTotalCoche . '€.' . ' PRECIO TOTAL:' . ($costeTotalHotel + $costeTotalAvion + $costeTotalCoche) . '€';
@@ -175,6 +168,7 @@ function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotal
 			<div class="row mb-3">
 				<label for="noches" class="col-sm-3 col-form-label">Número de noches:</label>
 				<div class="col-sm-9">
+					<!--SE AÑADE LA OPCION PARA QUE RECUERDE LA POSICION ESCOGIDA-->
 					<input type="number" class="form-control" name="noches" id="noches" value='<?= $numeroNoches ?>'>
 				</div>
 			</div>
@@ -183,6 +177,7 @@ function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotal
 				<div class="col-sm-9">
 					<select class="form-select" name='ciudad'>
 						<option selected value=''>Selecciona un destino</option>
+						<!--SE AÑADE LA OPCION PARA QUE RECUERDE LA POSICION ESCOGIDA-->
 						<option <?php if ($ciudad == 'Madrid') {
 									echo 'selected';
 								} ?>>Madrid</option>
@@ -199,8 +194,9 @@ function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotal
 				</div>
 			</div>
 			<div class="row mb-3">
-				<label for="coche" class="col-sm-3 col-form-label">Días alquiler coche:</label>
+				<label for="coche" class="col-sm-3 col-form-label">*Días alquiler coche: (opcional)</label>
 				<div class="col-sm-9">
+					<!--SE AÑADE LA OPCION PARA QUE RECUERDE LA POSICION ESCOGIDA-->
 					<input type="number" class="form-control" name="coche" id="coche" value='<?= $diasAlquilerCoche ?>'>
 				</div>
 			</div>
@@ -210,13 +206,15 @@ function calculoTotalPrecioViaje($costeTotalHotel, $costeTotalAvion, $costeTotal
 			<div class="row mb-3">
 				<label class="col-sm-3 col-form-label">Coste total: </label>
 				<div class="col-sm-9">
+					<!--SE AÑADE LA VARIABLE QUE MUESTRA EL TOTAL DEL PRECIO-->
 					<input type="text" class="form-control" name="total" id="total" disabled value='<?= $costeTotalViaje ?>'>
 				</div>
 			</div><br>
-			<span class='errores'><?= $errores ?></span>
+			<!--SE AÑADE LA VARIABLE QUE MUESTRA LAS EXCEPCIONES-->
+			<span style="color: red; font-size:20px;" class='errores'><?= $errores ?></span>
 		</form>
 	</main>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+	<script src=" https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
 </body>
 
 </html>
